@@ -1,0 +1,5 @@
+{
+  "name": "Trilingua: Edu-Translator",
+  "description": "An educational translation platform supporting Japanese, English, and Myanmar. Features automatic 3-way translation, Japanese Furigana (reading aids), and local history for repetitive learning.",
+  "requestFramePermissions": []
+}
