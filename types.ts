@@ -1,16 +1,17 @@
 
-export type Language = 'en' | 'jp' | 'mm' | 'vi';
+export type Language = 'en' | 'jp' | 'mm' | 'vi' | 'zh';
 
-export interface JapaneseSegment {
+export interface PhoneticSegment {
   text: string;
-  ruby?: string;
+  ruby?: string; // Furigana for JP, Pinyin for ZH
 }
 
 export interface TranslationResult {
   en?: string;
-  jp?: JapaneseSegment[];
+  jp?: PhoneticSegment[];
   mm?: string;
   vi?: string;
+  zh?: PhoneticSegment[];
   detectedLanguage: Language;
 }
 
