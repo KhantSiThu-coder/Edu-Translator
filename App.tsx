@@ -12,7 +12,7 @@ const STORAGE_KEY = 'trilingua_history';
 const LANGUAGES_CONFIG: { code: Language; label: string; native: string; color: string; bg: string }[] = [
   { code: 'en', label: 'English', native: 'English', color: 'text-blue-600', bg: 'bg-blue-50' },
   { code: 'jp', label: 'Japanese', native: '日本語', color: 'text-rose-600', bg: 'bg-rose-50' },
-  { code: 'zh', label: 'Chinese', native: '繁體中文', color: 'text-orange-600', bg: 'bg-orange-50' },
+  { code: 'zh', label: '中文', native: '中文', color: 'text-orange-600', bg: 'bg-orange-50' },
   { code: 'mm', label: 'Myanmar', native: 'မြန်မာ', color: 'text-amber-600', bg: 'bg-amber-50' },
   { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt', color: 'text-emerald-600', bg: 'bg-emerald-50' },
 ];
@@ -64,9 +64,6 @@ const App: React.FC = () => {
       setCurrentResult(result);
       setIsFromCache(fromCache);
 
-      // Only add to history if not just retrieved from cache to avoid clutter, 
-      // or you can add it anyway—usually history is separate from technical caching.
-      // Let's add it only if it's the first time in history for this session/entry.
       const isDuplicate = history.some(h => 
         h.originalText.trim().toLowerCase() === inputText.trim().toLowerCase() && 
         JSON.stringify(h.results) === JSON.stringify(result)
@@ -100,7 +97,7 @@ const App: React.FC = () => {
   const selectFromHistory = (item: HistoryItem) => {
     setInputText(item.originalText);
     setCurrentResult(item.results);
-    setIsFromCache(true); // Technically it's "cached" in history
+    setIsFromCache(true);
     setErrorMsg(null);
     const resultLangs: Language[] = [];
     if (item.results.en) resultLangs.push('en');
