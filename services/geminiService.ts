@@ -60,15 +60,22 @@ export const translateAndAnalyze = async (
       
       CRITICAL INSTRUCTION:
       - For Japanese (jp): Provide segments with Furigana.
-      - For Traditional Chinese (zh): Use natural vocabulary for Taiwan/Hong Kong. DO NOT use Japanese-specific vocabulary. For example, use '任務' or '作業' for 'assignment/task' instead of the Japanese '課題'. Provide segments with Pinyin (phonetic reading).
+      - For Traditional Chinese (zh): Ensure the vocabulary is natural for Taiwan/Hong Kong. DO NOT simply reuse Japanese Kanji. 
+        Examples of corrections:
+        - If input is '工業' (Industry), translate to '產業' in Traditional Chinese.
+        - If input is '課題' (Task/Assignment), translate to '任務' or '作業'.
+        - If input is '勉強' (Study), translate to '學習' or '唸書'.
+        - If input is '切符' (Ticket), translate to '車票'.
+      - Provide Traditional Chinese segments with Pinyin (phonetic reading).
       
       Text to translate: "${text}"`,
       config: {
-        systemInstruction: `You are an expert multilingual educational translator. 
-        Accuracy and natural vocabulary are critical. 
-        - Distinguish clearly between Japanese and Chinese vocabulary. Even if they share Kanji/Hanzi, use the word that is most natural in that specific language. 
-        - For Japanese, provide furigana for all Kanji.
-        - For Traditional Chinese, provide Pinyin for the characters.
+        systemInstruction: `You are an expert multilingual educational translator specializing in the nuances between Japanese (Kanji) and Traditional Chinese (Hanzi). 
+        Accuracy and regional naturalness are critical. 
+        - DO NOT allow Japanese "Wasei-Kango" (Japanese-made Chinese words) to bleed into the Traditional Chinese translation. 
+        - For Traditional Chinese (Taiwan/HK), use terms that native speakers use. For example, use '產業' for the general concept of 'Industry' instead of '工業'.
+        - For Japanese, provide furigana (ruby) for all Kanji.
+        - For Traditional Chinese, provide Pinyin for the characters in the ruby property.
         - For Vietnamese, ensure proper diacritics.
         - For Myanmar, ensure correct Burmese script usage.`,
         responseMimeType: "application/json",
