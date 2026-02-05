@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Languages, Send, Loader2, Sparkles, History as HistoryIcon, GraduationCap, User, CheckCircle2 } from 'lucide-react';
+import { Languages, Send, Loader2, Sparkles, History as HistoryIcon, GraduationCap, User, CheckCircle2, Pencil } from 'lucide-react';
 import { HistoryItem, TranslationResult, Language } from './types';
 import { translateAndAnalyze } from './services/geminiService';
 import { FuriganaText } from './components/FuriganaText';
+import { KanjiKeyboard } from './components/KanjiKeyboard';
 import HistorySidebar from './components/HistorySidebar';
 
 const STORAGE_KEY = 'trilingua_history';
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const [currentResult, setCurrentResult] = useState<TranslationResult | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [isKanjiKeyboardOpen, setIsKanjiKeyboardOpen] = useState(false);
   const [selectedLangs, setSelectedLangs] = useState<Language[]>(['en', 'jp', 'mm']);
 
   // Load history from localStorage on mount
@@ -47,7 +49,6 @@ const App: React.FC = () => {
         return prev.filter(l => l !== code);
       } else {
         if (prev.length >= 3) {
-          // Replace the first one if we are at max 3
           return [...prev.slice(1), code];
         }
         return [...prev, code];
@@ -64,7 +65,6 @@ const App: React.FC = () => {
       const result = await translateAndAnalyze(inputText, selectedLangs);
       setCurrentResult(result);
 
-      // Add to history
       const newItem: HistoryItem = {
         id: crypto.randomUUID(),
         timestamp: Date.now(),
@@ -73,7 +73,7 @@ const App: React.FC = () => {
         results: result,
       };
       
-      setHistory(prev => [newItem, ...prev.slice(0, 49)]); // Keep last 50 items
+      setHistory(prev => [newItem, ...prev.slice(0, 49)]);
     } catch (error) {
       console.error("Translation error:", error);
       alert("Failed to translate. Please check your network or API key.");
@@ -82,11 +82,18 @@ const App: React.FC = () => {
     }
   };
 
+  const insertKanji = (char: string) => {
+    setInputText(prev => prev + char);
+  };
+
+  const deleteLastChar = () => {
+    setInputText(prev => prev.slice(0, -1));
+  };
+
   const selectFromHistory = (item: HistoryItem) => {
     setInputText(item.originalText);
     setCurrentResult(item.results);
     
-    // Auto-update selected languages to match history item results
     const resultLangs: Language[] = [];
     if (item.results.en) resultLangs.push('en');
     if (item.results.jp) resultLangs.push('jp');
@@ -133,7 +140,7 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
           {/* Input Section */}
           <section className="max-w-4xl mx-auto w-full space-y-4">
-            <form onSubmit={handleTranslate} className="relative group">
+            <div className="relative group">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
@@ -145,10 +152,16 @@ const App: React.FC = () => {
                   }
                 }}
               />
-              <div className="absolute bottom-4 right-4 flex items-center gap-3">
-                <span className="text-xs text-slate-400 hidden sm:block">Press Ctrl + Enter to translate</span>
+              <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 <button
-                  type="submit"
+                  onClick={() => setIsKanjiKeyboardOpen(true)}
+                  className="bg-white border-2 border-slate-200 hover:border-indigo-500 text-slate-600 hover:text-indigo-600 p-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+                  title="Kanji Handwriting"
+                >
+                  <Pencil size={18} />
+                </button>
+                <button
+                  onClick={() => handleTranslate()}
                   disabled={isLoading || !inputText.trim()}
                   className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg active:scale-95"
                 >
@@ -156,7 +169,7 @@ const App: React.FC = () => {
                   Translate
                 </button>
               </div>
-            </form>
+            </div>
 
             {/* Language Selector */}
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -180,7 +193,7 @@ const App: React.FC = () => {
 
           {/* Results Display */}
           {(currentResult || isLoading) && (
-            <section className="max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <section className="max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32 md:pb-0">
               <div className={`grid grid-cols-1 md:grid-cols-${selectedLangs.length} gap-6`}>
                 {selectedLangs.map((langCode) => {
                   const config = LANGUAGES_CONFIG.find(c => c.code === langCode)!;
@@ -234,7 +247,6 @@ const App: React.FC = () => {
             </section>
           )}
 
-          {/* Empty State */}
           {!currentResult && !isLoading && (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-4">
               <div className="bg-slate-100 p-6 rounded-full">
@@ -265,6 +277,15 @@ const App: React.FC = () => {
           </a>
         </footer>
       </div>
+
+      {/* Handwriting Keyboard Panel */}
+      {isKanjiKeyboardOpen && (
+        <KanjiKeyboard
+          onInsert={insertKanji}
+          onDeleteChar={deleteLastChar}
+          onClose={() => setIsKanjiKeyboardOpen(false)}
+        />
+      )}
 
       {/* History Sidebar */}
       <div className={`

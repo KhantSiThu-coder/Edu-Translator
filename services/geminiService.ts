@@ -28,30 +28,20 @@ export const translateAndAnalyze = async (text: string, targetLangs: Language[])
             description: "The ISO code of the detected language (en, jp, mm, or vi)",
             enum: ["en", "jp", "mm", "vi"]
           },
-          en: {
-            type: Type.STRING,
-            description: "Translation in English (optional)"
-          },
+          en: { type: Type.STRING },
           jp: {
             type: Type.ARRAY,
-            description: "Structured Japanese translation with Furigana (optional)",
             items: {
               type: Type.OBJECT,
               properties: {
-                text: { type: Type.STRING, description: "The Japanese text (kanji or kana)" },
-                ruby: { type: Type.STRING, description: "The hiragana reading for the kanji (optional)" }
+                text: { type: Type.STRING },
+                ruby: { type: Type.STRING }
               },
               required: ["text"]
             }
           },
-          mm: {
-            type: Type.STRING,
-            description: "Translation in Myanmar (optional)"
-          },
-          vi: {
-            type: Type.STRING,
-            description: "Translation in Vietnamese (optional)"
-          }
+          mm: { type: Type.STRING },
+          vi: { type: Type.STRING }
         },
         required: ["detectedLanguage"]
       }
@@ -60,4 +50,37 @@ export const translateAndAnalyze = async (text: string, targetLangs: Language[])
 
   const jsonStr = response.text.trim();
   return JSON.parse(jsonStr) as TranslationResult;
+};
+
+export const recognizeHandwriting = async (base64Image: string): Promise<string[]> => {
+  const imagePart = {
+    inlineData: {
+      mimeType: 'image/png',
+      data: base64Image.split(',')[1],
+    },
+  };
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: {
+      parts: [
+        imagePart,
+        { text: "Identify the handwritten Kanji in this image. Provide the top 5 most likely characters as a simple JSON array of strings. Return ONLY the JSON." }
+      ]
+    },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING }
+      }
+    }
+  });
+
+  try {
+    return JSON.parse(response.text) as string[];
+  } catch (e) {
+    console.error("Failed to parse recognition results", e);
+    return [];
+  }
 };
