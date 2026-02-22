@@ -2,9 +2,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TranslationResult, Language } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const CACHE_STORAGE_KEY = 'trilingua_api_cache_v2';
 const MAX_CACHE_SIZE = 100;
+
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = () => {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set. Please configure it in the environment.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 // Helper to manage persistent cache
 const getCache = (): Record<string, { result: TranslationResult; timestamp: number }> => {
@@ -54,6 +66,7 @@ export const translateAndAnalyze = async (
 
   // 2. Call API if not in cache
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Translate the following text into these languages: ${targetLangs.join(', ')}. 
@@ -154,6 +167,7 @@ export const recognizeHandwriting = async (base64Image: string): Promise<string[
   };
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
