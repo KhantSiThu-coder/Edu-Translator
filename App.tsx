@@ -82,8 +82,10 @@ const App: React.FC = () => {
     } catch (error: any) {
       if (error.message === 'RATE_LIMIT') {
         setErrorMsg("API Rate Limit Reached. Please wait a minute and try again.");
+      } else if (error.message.includes("GEMINI_API_KEY")) {
+        setErrorMsg("API Key missing. Please ensure GEMINI_API_KEY is configured.");
       } else {
-        setErrorMsg("An error occurred during translation. Please check your connection.");
+        setErrorMsg(`Translation error: ${error.message || "Please check your connection."}`);
       }
       console.error(error);
     } finally {
