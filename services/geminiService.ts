@@ -2,8 +2,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TranslationResult, Language } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const CACHE_STORAGE_KEY = 'trilingua_api_cache_v1';
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const CACHE_STORAGE_KEY = 'trilingua_api_cache_v2';
 const MAX_CACHE_SIZE = 100;
 
 // Helper to manage persistent cache
@@ -61,11 +61,7 @@ export const translateAndAnalyze = async (
       CRITICAL INSTRUCTION:
       - For Japanese (jp): Provide segments with Furigana.
       - For Traditional Chinese (zh): Ensure the vocabulary is natural for Taiwan/Hong Kong. DO NOT simply reuse Japanese Kanji. 
-        Examples of corrections:
-        - If input is '工業' (Industry), translate to '產業' in Traditional Chinese.
-        - If input is '課題' (Task/Assignment), translate to '任務' or '作業'.
-        - If input is '勉強' (Study), translate to '學習' or '唸書'.
-        - If input is '切符' (Ticket), translate to '車票'.
+      - The 'text' property MUST ONLY contain the original characters. DO NOT include readings in brackets like "日本語(にほんご)" in the 'text' property.
       - Provide Traditional Chinese segments with Pinyin (phonetic reading).
       
       Text to translate: "${text}"`,
@@ -76,6 +72,7 @@ export const translateAndAnalyze = async (
         - For Traditional Chinese (Taiwan/HK), use terms that native speakers use. For example, use '產業' for the general concept of 'Industry' instead of '工業'.
         - For Japanese, provide furigana (ruby) for all Kanji.
         - For Traditional Chinese, provide Pinyin for the characters in the ruby property.
+        - IMPORTANT: The 'text' property should contain ONLY the characters to be displayed. NEVER include phonetic readings in brackets (e.g., "漢字(かんじ)") inside the 'text' property. The reading goes exclusively in the 'ruby' property.
         - For Vietnamese, ensure proper diacritics.
         - For Myanmar, ensure correct Burmese script usage.`,
         responseMimeType: "application/json",
@@ -117,8 +114,23 @@ export const translateAndAnalyze = async (
       }
     });
 
-    const jsonStr = response.text.trim();
+    const jsonStr = response.text?.trim() || "{}";
     const result = JSON.parse(jsonStr) as TranslationResult;
+    
+    // Client-side cleanup: Remove readings in brackets if the model included them in 'text'
+    const bracketRegex = /[\(\（][^\)\）]+[\)\）]/g;
+    if (result.jp) {
+      result.jp = result.jp.map(s => ({
+        ...s,
+        text: s.text.replace(bracketRegex, '')
+      }));
+    }
+    if (result.zh) {
+      result.zh = result.zh.map(s => ({
+        ...s,
+        text: s.text.replace(bracketRegex, '')
+      }));
+    }
     
     // 3. Save to Cache
     setCache(cacheKey, result);
@@ -158,7 +170,8 @@ export const recognizeHandwriting = async (base64Image: string): Promise<string[
         }
       }
     });
-    return JSON.parse(response.text) as string[];
+    const text = response.text || "[]";
+    return JSON.parse(text) as string[];
   } catch (e) {
     return [];
   }
